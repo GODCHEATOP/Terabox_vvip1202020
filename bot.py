@@ -1,7 +1,7 @@
 import os
 import asyncio
 from datetime import datetime
-from pyrogram import Client, filters
+from pyrogram import Client, filters, idle
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message, CallbackQuery
 
 from config import API_ID, API_HASH, BOT_TOKEN, FORCE_CHANNEL, ADMIN_ID
@@ -186,16 +186,19 @@ async def downloader(client, message: Message):
     except Exception as e:
         await msg.edit(f"❌ ᴇʀʀᴏʀ: `{e}`")
 
+# ------------------- Main -------------------
+
 async def reset_task():
     while True:
         reset_daily_downloads()
         await asyncio.sleep(86400)
 
-if __name__ == "__main__":
+async def main():
     try:
-        app.start()
-        app.loop.create_task(reset_task())
-        app.idle()
+        await app.start()
+        asyncio.create_task(reset_task())
+        print("✅ Bot is running...")
+        await idle()
     except Exception as e:
         if "FLOOD_WAIT" in str(e):
             wait_time = int(str(e).split("A wait of ")[1].split(" ")[0])
@@ -206,4 +209,6 @@ if __name__ == "__main__":
         else:
             raise e
 
+if __name__ == "__main__":
+    asyncio.run(main())
     
