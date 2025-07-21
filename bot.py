@@ -14,8 +14,8 @@ from database import (
     reset_daily_downloads
 )
 
-app = Client("Video_hub_terabox_bot", api_id=28709969, api_hash=c7b1d41677ecf2eacb3e14bab5accf83, bot_token=7809620074:AAEGAt2bLWKlUVD8S2j_n5ZEMxL2-hvgwkE)
-
+app = Client("Video_hub_terabox_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKE
+N)
 users_file = "users.txt"
 def save_user(user_id):
     with open(users_file, "a+") as f:
