@@ -192,7 +192,18 @@ async def reset_task():
         await asyncio.sleep(86400)
 
 if __name__ == "__main__":
-    app.start()
-    app.loop.create_task(reset_task())
-    app.idle()
+    try:
+        app.start()
+        app.loop.create_task(reset_task())
+        app.idle()
+    except Exception as e:
+        if "FLOOD_WAIT" in str(e):
+            wait_time = int(str(e).split("A wait of ")[1].split(" ")[0])
+            print(f"⏳ FloodWait detected! Sleeping for {wait_time} seconds...")
+            import time
+            time.sleep(wait_time + 5)
+            os.execvp("python", ["python", "bot.py"])
+        else:
+            raise e
+
     
