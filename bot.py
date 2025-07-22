@@ -3,7 +3,6 @@ import asyncio
 from datetime import datetime
 from pyrogram import Client, filters, idle
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message, CallbackQuery
-
 from config import API_ID, API_HASH, BOT_TOKEN, FORCE_CHANNEL, ADMIN_ID
 from tools import get_data
 from database import (
@@ -15,6 +14,8 @@ from database import (
 app = Client("Video_hub_terabox_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
 users_file = "users.txt"
+user_states = {}  # For tracking admin input states manually
+
 def save_user(user_id):
     with open(users_file, "a+") as f:
         f.seek(0)
@@ -49,31 +50,32 @@ async def start(client, message: Message):
             referral_data[referrer_id]["referrals"] += 1
             try:
                 await app.send_message(int(referrer_id),
-                    f"🎉 ʏᴏᴜ ɢᴏᴛ ᴀ ɴᴇᴡ ʀᴇғᴇʀʀᴀʟ!\n👤 [{user.first_name}](tg://user?id={user.id}) ᴊᴏɪɴᴇᴅ ᴛʜʀᴏᴜɢʜ ʏᴏᴜʀ ʟɪɴᴋ\n💰 +1 ᴅᴏᴡɴʟᴏᴀᴅ ᴄʀᴇᴅɪᴛ"
+                    f"🎉 You got a new referral!\n👤 [{user.first_name}](tg://user?id={user.id}) joined through your link\n💰 +1 download credit"
                 )
-            except: pass
+            except:
+                pass
 
     save_user_data(user_data)
     save_referral_data(referral_data)
 
     if force_join_required(user.id):
         return await message.reply(
-            "🔐 ᴘʟᴇᴀsᴇ ᴊᴏɪɴ ᴏᴜʀ ᴜᴘᴅᴀᴛᴇs ᴄʜᴀɴɴᴇʟ ᴛᴏ ᴜsᴇ ᴛʜɪs ʙᴏᴛ.",
+            "🔐 Please join our updates channel to use this bot.",
             reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("📢 ᴊᴏɪɴ developer channel", url="https://t.me/+28D1ypobsIxjZjQ1")],
-                [InlineKeyboardButton("📢 ᴊᴏɪɴ video link channel", url="https://t.me/+bnQ1FHi3EOk0YjM1")],
-                [InlineKeyboardButton("FOLLOW ME BABY 🌚", url="https://www.instagram.com/love_reel_page/profilecard/?igsh=MWpvbWFjd29namlxMQ==")],
-                [InlineKeyboardButton("✅ ɪ ᴊᴏɪɴᴇᴅ", callback_data="refresh")]
+                [InlineKeyboardButton("📢 Join Developer Channel", url="https://t.me/+28D1ypobsIxjZjQ1")],
+                [InlineKeyboardButton("📢 Join Video Link Channel", url="https://t.me/+bnQ1FHi3EOk0YjM1")],
+                [InlineKeyboardButton("Follow Me Baby 🌚", url="https://www.instagram.com/love_reel_page/profilecard/?igsh=MWpvbWFjd29namlxMQ==")],
+                [InlineKeyboardButton("✅ I Joined", callback_data="refresh")]
             ])
         )
 
     referral_link = f"https://t.me/Video_hub_terabox_bot?start={user.id}"
     await message.reply(
-        f"👋 ʜᴇʟʟᴏ {user.mention}\n\n"
-        f"📥 sᴇɴᴅ ᴀɴʏ ᴛᴇʀᴀʙᴏx ʟɪɴᴋ ᴛᴏ ᴅᴏᴡɴʟᴏᴀᴅ.\n\n"
-        f"🎁 ᴅᴀɪʟʏ ʟɪᴍɪᴛ: 4\n"
-        f"➕ 1 ʀᴇғᴇʀʀᴀʟ = +1 ᴇxᴛʀᴀ\n"
-        f"🔗 ʏᴏᴜʀ ʀᴇғᴇʀʀᴀʟ:\n`{referral_link}`"
+        f"👋 Hello {user.mention}\n\n"
+        f"📥 Send any Terabox link to download.\n\n"
+        f"🎁 Daily Limit: 4\n"
+        f"➕ 1 referral = +1 extra\n"
+        f"🔗 Your Referral Link:\n`{referral_link}`"
     )
 
 @app.on_callback_query()
@@ -81,14 +83,14 @@ async def join_refresh(client, cb: CallbackQuery):
     if cb.data == "refresh":
         if not force_join_required(cb.from_user.id):
             await cb.message.delete()
-            await cb.message.reply("✅ ᴛʜᴀɴᴋ ʏᴏᴜ! ɴᴏᴡ sᴇɴᴅ ᴀ ʟɪɴᴋ.")
+            await cb.message.reply("✅ Thank you! Now send a link.")
         else:
-            await cb.answer("❌ ɴᴏᴛ ᴊᴏɪɴᴇᴅ ʏᴇᴛ!", show_alert=True)
+            await cb.answer("❌ Not joined yet!", show_alert=True)
 
 @app.on_message(filters.command("panel") & filters.user(ADMIN_ID))
 async def admin_panel(client, message):
     await message.reply(
-        "🛠️ ᴀᴅᴍɪɴ ᴘᴀɴᴇʟ:",
+        "🛠️ Admin Panel:",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("📊 Stats", callback_data="stats")],
             [InlineKeyboardButton("➕ Add Credits", callback_data="addcredit")],
@@ -101,18 +103,18 @@ async def admin_actions(client, query: CallbackQuery):
     if query.data == "stats":
         u, r = get_user_data(), get_referral_data()
         await query.message.edit(
-            f"👤 ᴛᴏᴛᴀʟ ᴜsᴇʀs: {len(u)}\n🔗 ʀᴇғᴇʀʀᴀʟs ᴜsᴇᴅ: {sum([v['referrals'] for v in r.values()])}"
+            f"👤 Total Users: {len(u)}\n🔗 Referrals Used: {sum([v['referrals'] for v in r.values()])}"
         )
     elif query.data == "addcredit":
-        await query.message.edit("✏️ sᴇɴᴅ ᴜsᴇʀ ɪᴅ ᴀɴᴅ ᴀᴍᴏᴜɴᴛ ʟɪᴋᴇ:\n`123456789 3`")
-        app.set_state(query.from_user.id, "waiting_credit")
+        await query.message.edit("✏️ Send user ID and amount like:\n`123456789 3`")
+        user_states[query.from_user.id] = "waiting_credit"
     elif query.data == "broadcast":
-        await query.message.edit("📢 ɴᴏᴡ sᴇɴᴅ ᴛʜᴇ ᴍᴇssᴀɢᴇ ᴛᴏ ʙʀᴏᴀᴅᴄᴀsᴛ")
-        app.set_state(query.from_user.id, "waiting_broadcast")
+        await query.message.edit("📢 Now send the message to broadcast")
+        user_states[query.from_user.id] = "waiting_broadcast"
 
 @app.on_message(filters.text & filters.user(ADMIN_ID))
 async def admin_inputs(client, message: Message):
-    state = app.get_state(message.from_user.id)
+    state = user_states.get(message.from_user.id)
     if state == "waiting_credit":
         try:
             uid, amt = message.text.split()
@@ -121,10 +123,10 @@ async def admin_inputs(client, message: Message):
                 r[uid] = {"referrals": 0, "referred_by": None}
             r[uid]["referrals"] += int(amt)
             save_referral_data(r)
-            await message.reply(f"✅ ᴀᴅᴅᴇᴅ {amt} ᴄʀᴇᴅɪᴛs ᴛᴏ `{uid}`")
+            await message.reply(f"✅ Added {amt} credits to `{uid}`")
         except:
-            await message.reply("❌ ɪɴᴠᴀʟɪᴅ ғᴏʀᴍᴀᴛ. ᴜsᴇ: `user_id amount`")
-        app.clear_state(message.from_user.id)
+            await message.reply("❌ Invalid format. Use: `user_id amount`")
+        user_states.pop(message.from_user.id, None)
 
     elif state == "waiting_broadcast":
         with open("users.txt") as f:
@@ -136,8 +138,8 @@ async def admin_inputs(client, message: Message):
                 sent += 1
             except:
                 fail += 1
-        await message.reply(f"📤 ʙʀᴏᴀᴅᴄᴀsᴛ ᴄᴏᴍᴘʟᴇᴛᴇ.\n✅ sᴇɴᴛ: {sent} | ❌ ғᴀɪʟᴇᴅ: {fail}")
-        app.clear_state(message.from_user.id)
+        await message.reply(f"📤 Broadcast complete.\n✅ Sent: {sent} | ❌ Failed: {fail}")
+        user_states.pop(message.from_user.id, None)
 
 @app.on_message(filters.text & ~filters.command(["start", "panel"]))
 async def downloader(client, message: Message):
@@ -145,7 +147,7 @@ async def downloader(client, message: Message):
     text = message.text.strip()
 
     if force_join_required(message.from_user.id):
-        return await message.reply("🔒 ᴘʟᴇᴀsᴇ ᴊᴏɪɴ ᴄʜᴀɴɴᴇʟ ғɪʀsᴛ.")
+        return await message.reply("🔒 Please join channel first.")
 
     user_data = get_user_data()
     referral_data = get_referral_data()
@@ -157,7 +159,7 @@ async def downloader(client, message: Message):
 
     if user_data[user_id]["downloads"] >= 4:
         if referral_data[user_id]["referrals"] <= 0:
-            return await message.reply("🚫 ʟɪᴍɪᴛ ʀᴇᴀᴄʜᴇᴅ.\n💡 ʀᴇғᴇʀ ᴛᴏ ɢᴇᴛ ᴍᴏʀᴇ.")
+            return await message.reply("🚫 Limit reached.\n💡 Refer to get more.")
         referral_data[user_id]["referrals"] -= 1
     else:
         user_data[user_id]["downloads"] += 1
@@ -165,17 +167,18 @@ async def downloader(client, message: Message):
     save_user_data(user_data)
     save_referral_data(referral_data)
 
-    msg = await message.reply("⏳ ᴘʀᴏᴄᴇssɪɴɢ ʏᴏᴜʀ ʟɪɴᴋ...")
+    msg = await message.reply("⏳ Processing your link...")
     try:
         bar = ["▰▱▱▱▱", "▰▰▱▱▱", "▰▰▰▱▱", "▰▰▰▰▱", "▰▰▰▰▰"]
         for b in bar:
-            await msg.edit(f"⬇️ ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ...\n`{b}`")
+            await msg.edit(f"⬇️ Downloading...\n`{b}`")
             await asyncio.sleep(0.3)
 
         data = get_data(text)
         if not data:
-            return await msg.edit("❌ ɪɴᴠᴀʟɪᴅ ᴏʀ ᴇxᴘɪʀᴇᴅ ʟɪɴᴋ.")
-        caption = f"🎬 **{data['file_name']}**\n📦 sɪᴢᴇ: {data['size'] or 'N/A'}"
+            return await msg.edit("❌ Invalid or expired link.")
+
+        caption = f"🎬 **{data['file_name']}**\n📦 Size: {data['size'] or 'N/A'}"
         await client.send_video(
             message.chat.id,
             video=data["link"],
@@ -184,31 +187,15 @@ async def downloader(client, message: Message):
         )
         await msg.delete()
     except Exception as e:
-        await msg.edit(f"❌ ᴇʀʀᴏʀ: `{e}`")
-
-# ------------------- Main -------------------
+        await msg.edit(f"❌ Error: `{e}`")
 
 async def reset_task():
     while True:
         reset_daily_downloads()
         await asyncio.sleep(86400)
 
-async def main():
-    try:
-        await app.start()
-        asyncio.create_task(reset_task())
-        print("✅ Bot is running...")
-        await idle()
-    except Exception as e:
-        if "FLOOD_WAIT" in str(e):
-            wait_time = int(str(e).split("A wait of ")[1].split(" ")[0])
-            print(f"⏳ FloodWait detected! Sleeping for {wait_time} seconds...")
-            import time
-            time.sleep(wait_time + 5)
-            os.execvp("python", ["python", "bot.py"])
-        else:
-            raise e
-
 if __name__ == "__main__":
-    asyncio.run(main())
-    
+    app.start()
+    app.loop.create_task(reset_task())
+    idle()
+        
