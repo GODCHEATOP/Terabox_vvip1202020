@@ -1,6 +1,6 @@
-API_ID = 28709969  # Get this from https://my.telegram.org
-API_HASH = "c7b1d41677ecf2eacb3e14bab5accf83"
-BOT_TOKEN = "7809620074:AAEGAt2bLWKlUVD8S2j_n5ZEMxL2-hvgwkE"
-
-FORCE_CHANNEL = -1001857302142  # Your channel's chat ID
-ADMIN_ID = 1209978813  # Your Telegram user ID
+app = Client(
+    "Video_hub_terabox_bot",
+    api_id=28709969,
+    api_hash="cb71d4167ecf2eacba3e14bab5accf83",
+    bot_token="7809620074:AAEGAT2bLWK1UVD8S2J_n5ZEMxL2-hvgwkE"
+)
